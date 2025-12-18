@@ -42,19 +42,15 @@ git clone https://github.com/longzw1997/Open-GroundingDino.git && cd Open-Ground
 2. Install the required dependencies.
 
 ```bash
-pip install -r requirements.txt 
-cd models/GroundingDINO/ops
-python setup.py build install
-python test.py
-cd ../../..
+bash setup.sh
 ```
 
 3. Download [pre-trained model](https://github.com/IDEA-Research/GroundingDINO/releases) and [BERT](https://huggingface.co/bert-base-uncased) weights, then modify the corresponding paths in the train/test script.
 
 # Dataset
 
-For **training**, we use the [odvg data format](data_format.md) to support **both OD data and VG data**.  
-Before model training begins, you need to convert your dataset into odvg format, see [data_format.md](data_format.md) | [datasets_mixed_odvg.json](config/datasets_mixed_odvg.json) | [coco2odvg.py](./tools/coco2odvg.py) | [grit2odvg](./tools/grit2odvg.py) for more details.  
+For **training**, we use the [odvg data format](data_format.md) to support **both OD data and VG data**.
+Before model training begins, you need to convert your dataset into odvg format, see [data_format.md](data_format.md) | [datasets_mixed_odvg.json](config/datasets_mixed_odvg.json) | [coco2odvg.py](./tools/coco2odvg.py) | [grit2odvg](./tools/grit2odvg.py) for more details.
 
 For **testing**, we use [coco format](https://cocodataset.org/#format-data), which currently only supports OD datasets.
 
@@ -93,7 +89,7 @@ For **testing**, we use [coco format](https://cocodataset.org/#format-data), whi
       "root": "path/GRIT-20M/data/",
       "anno": "path/GRIT-20M/anno/grit_odvg_620k.jsonl",
       "dataset_mode": "odvg"
-    }, 
+    },
     {
       "root": "path/flickr30k/images/flickr30k_images/",
       "anno": "path/flickr30k/annotations/flickr30k_entities_odvg_158k.jsonl",
@@ -181,14 +177,14 @@ bash test_slurm.sh  ${PARTITION} ${GPU_NUM} ${CFG} ${DATASETS} ${OUTPUT_DIR}
       <td>O365,GoldG,Cap4M</td>
       <td>zero-shot</td>
       <td>48.4<br>(zero-shot)</td>
-      <td><a href="https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha/groundingdino_swint_ogc.pth">model</a> 
+      <td><a href="https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha/groundingdino_swint_ogc.pth">model</a>
       <td> - </td>
     </tr>
       <td>GroundingDINO-T<br>(fine-tune)</td>
       <td>O365,GoldG,Cap4M</td>
       <td>finetune<br>w/ coco</td>
       <td><b>57.3</b><br>(fine-tune)</td>
-      <td><a href="https://github.com/longzw1997/Open-GroundingDino/releases/download/v0.1.0/gdinot-coco-ft.pth">model</a> 
+      <td><a href="https://github.com/longzw1997/Open-GroundingDino/releases/download/v0.1.0/gdinot-coco-ft.pth">model</a>
       <td><a href="https://drive.google.com/file/d/1TJRAiBbVwj3AfxvQAoi1tmuRfXH1hLie/view?usp=drive_link">cfg</a> | <a href="https://drive.google.com/file/d/1u8XyvBug56SrJY85UtMZFPKUIzV3oNV6/view?usp=drive_link">log</a></td>
     </tr>
     <tr>
@@ -196,7 +192,7 @@ bash test_slurm.sh  ${PARTITION} ${GPU_NUM} ${CFG} ${DATASETS} ${OUTPUT_DIR}
       <td>COCO,O365,LIVS,<a href="https://github.com/V3Det/V3Det">V3Det</a>,<br>GRIT-200K,<a href="https://github.com/BryanPlummer/flickr30k_entities">Flickr30k</a>(total 1.8M)</td>
       <td>zero-shot</td>
       <td><b>55.1</b><br>(zero-shot)</td>
-      <td><a href="https://github.com/longzw1997/Open-GroundingDino/releases/download/v0.1.0/gdinot-1.8m-odvg.pth">model</a>  
+      <td><a href="https://github.com/longzw1997/Open-GroundingDino/releases/download/v0.1.0/gdinot-1.8m-odvg.pth">model</a>
       <td><a href='https://drive.google.com/file/d/1LwtkvBHkP1OkErKBsVfwjcedVXkyocA5/view?usp=drive_link'>cfg</a> | <a href="https://drive.google.com/file/d/1kBEFk14OqcYHC7DPdA_BGtk2TBQkJtrL/view?usp=drive_link">log</a></td>
     </tr>
   </tbody>
@@ -245,7 +241,7 @@ Provided codes were adapted from:
 
 # Contact
 
-- longzuwei at sensetime.com  
-- liwei1 at sensetime.com  
+- longzuwei at sensetime.com
+- liwei1 at sensetime.com
 
 Feel free to contact we if you have any suggestions or questions. Bugs found are also welcome. Please create a pull request if you find any bugs or want to contribute code.
