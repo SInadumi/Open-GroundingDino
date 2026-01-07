@@ -1,19 +1,18 @@
 # ==========================================================
 # Modified from mmcv
 # ==========================================================
-import os, sys
-import os.path as osp
 import ast
-import tempfile
+import os.path as osp
+import platform
 import shutil
-from importlib import import_module
-
+import sys
+import tempfile
 from argparse import Action
+from importlib import import_module
 
 from addict import Dict
 from yapf.yapflib.yapf_api import FormatCode
 
-import platform
 MACOS, LINUX, WINDOWS = (platform.system() == x for x in ['Darwin', 'Linux', 'Windows'])  # environment booleans
 
 BASE_KEY = '_base_'
@@ -146,7 +145,7 @@ class SLConfig(object):
 
     @staticmethod
     def _merge_a_into_b(a, b):
-        """merge dict `a` into dict `b` (non-inplace).
+        """Merge dict `a` into dict `b` (non-inplace).
             values in `a` will overwrite `b`.
             copy first to avoid inplace modification
             
@@ -157,14 +156,13 @@ class SLConfig(object):
         Returns:
             [dict]: [description]
         """
-
         if not isinstance(a, dict):
             return a
 
         b = b.copy()
         for k, v in a.items():
             if isinstance(v, dict) and k in b and not v.pop(DELETE_KEY, False):
-            
+
                 if not isinstance(b[k], dict) and not isinstance(b[k], list):
                     # if :
 
@@ -183,9 +181,9 @@ class SLConfig(object):
                         f'index {k} should be an int when input but {type(k)}'
                     )
                 b[int(k)] = SLConfig._merge_a_into_b(v, b[int(k)])
-            else:   
+            else:
                 b[k] = v
-                
+
         return b
 
     @staticmethod
@@ -317,7 +315,7 @@ class SLConfig(object):
         text, _ = FormatCode(text, style_config=yapf_style, verify=True)
 
         return text
-    
+
 
     def __repr__(self):
         return f'Config (path: {self.filename}): {self._cfg_dict.__repr__()}'

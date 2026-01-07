@@ -15,9 +15,10 @@
 # ------------------------------------------------------------------------
 
 
-import torch, os
-from torch import nn
+
+import torch
 from scipy.optimize import linear_sum_assignment
+from torch import nn
 
 from util.box_ops import box_cxcywh_to_xyxy, generalized_box_iou
 
@@ -46,7 +47,7 @@ class HungarianMatcher(nn.Module):
 
     @torch.no_grad()
     def forward(self, outputs, targets, label_map):
-        """ Performs the matching
+        """Performs the matching
         Params:
             outputs: This is a dict that contains at least these entries:
                  "pred_logits": Tensor of dim [batch_size, num_queries, num_classes] with the classification logits
@@ -62,7 +63,6 @@ class HungarianMatcher(nn.Module):
             For each batch element, it holds:
                 len(index_i) = len(index_j) = min(num_queries, num_target_boxes)
         """
-
         bs, num_queries = outputs["pred_logits"].shape[:2]
 
         # We flatten to compute the cost matrices in a batch
@@ -82,12 +82,12 @@ class HungarianMatcher(nn.Module):
         neg_cost_class = (1 - alpha) * (out_prob ** gamma) * (-(1 - out_prob + 1e-8).log())
         pos_cost_class = alpha * ((1 - out_prob) ** gamma) * (-(out_prob + 1e-8).log())
         new_label_map=new_label_map.to(pos_cost_class.device)
-        
+
         cost_bbox = torch.cdist(out_bbox, tgt_bbox, p=1)
 
         # cost_class=(pos_cost_class @ new_label_map.T - neg_cost_class@ new_label_map.T)
         cost_class=[]
-        for idx_map in new_label_map:       
+        for idx_map in new_label_map:
             idx_map = idx_map / idx_map.sum()
             cost_class.append(pos_cost_class @ idx_map - neg_cost_class@ idx_map)
         if cost_class:
@@ -95,7 +95,7 @@ class HungarianMatcher(nn.Module):
         else:
             cost_class=torch.zeros_like(cost_bbox)
         # Compute the L1 cost between boxes
-        
+
 
         # Compute the giou cost betwen boxes
         cost_giou = -generalized_box_iou(box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
@@ -145,7 +145,7 @@ class SimpleMinsumMatcher(nn.Module):
 
     @torch.no_grad()
     def forward(self, outputs, targets):
-        """ Performs the matching
+        """Performs the matching
         Params:
             outputs: This is a dict that contains at least these entries:
                  "pred_logits": Tensor of dim [batch_size, num_queries, num_classes] with the classification logits
@@ -161,7 +161,6 @@ class SimpleMinsumMatcher(nn.Module):
             For each batch element, it holds:
                 len(index_i) = len(index_j) = min(num_queries, num_target_boxes)
         """
-
         bs, num_queries = outputs["pred_logits"].shape[:2]
 
         # We flatten to compute the cost matrices in a batch
@@ -181,12 +180,12 @@ class SimpleMinsumMatcher(nn.Module):
 
         # Compute the L1 cost between boxes
         cost_bbox = torch.cdist(out_bbox, tgt_bbox, p=1)
-            
-        # Compute the giou cost betwen boxes            
+
+        # Compute the giou cost betwen boxes
         cost_giou = -generalized_box_iou(box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
 
         # Final cost matrix
-        
+
         C = self.cost_bbox * cost_bbox + self.cost_class * cost_class + self.cost_giou * cost_giou
         C = C.view(bs, num_queries, -1)
 
@@ -213,6 +212,6 @@ def build_matcher(args):
         return SimpleMinsumMatcher(
             cost_class=args.set_cost_class, cost_bbox=args.set_cost_bbox, cost_giou=args.set_cost_giou,
             focal_alpha=args.focal_alpha
-        )    
+        )
     else:
         raise NotImplementedError("Unknown args.matcher_type: {}".format(args.matcher_type))

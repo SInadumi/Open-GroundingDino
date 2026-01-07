@@ -1,16 +1,14 @@
-import xml.etree.ElementTree as ET
-import jsonlines
-import random
-from tqdm import tqdm
 import argparse
-import os
-import glob
 import re
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
-from typing import Any, Optional, Union
-from dataclasses_json import DataClassJsonMixin, LetterCase, config
 from pathlib import Path
+from typing import Any, Optional, Union
+
+import jsonlines
+from dataclasses_json import DataClassJsonMixin, LetterCase, config
+from tqdm import tqdm
+
 
 class CamelCaseDataClassJsonMixin(DataClassJsonMixin):
     dataclass_json_config = config(letter_case=LetterCase.CAMEL)["dataclasses_json"]  # type: ignore

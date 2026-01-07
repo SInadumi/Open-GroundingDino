@@ -3,6 +3,7 @@ import functools
 import logging
 import os
 import sys
+
 import colorlog
 
 
@@ -30,7 +31,7 @@ def setup_logger(
         datefmt=None,
         reset=True,
         log_colors={
-            'DEBUG':    'cyan', 
+            'DEBUG':    'cyan',
             'INFO':     'green',
             'WARNING':  'yellow',
             'ERROR':    'red',

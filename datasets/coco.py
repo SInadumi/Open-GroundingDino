@@ -6,25 +6,21 @@ Mostly copy-paste from https://github.com/pytorch/vision/blob/13b35ff/references
 """
 if __name__=="__main__":
     # for debug only
-    import os, sys
+    import os
+    import sys
     sys.path.append(os.path.dirname(sys.path[0]))
-from torchvision.datasets.vision import VisionDataset
 
-import json
-from pathlib import Path
-import random
 import os
-from typing import Any, Callable, List, Optional, Tuple
-
-from PIL import Image
+import random
 
 import torch
 import torch.utils.data
 import torchvision
+from PIL import Image
 from pycocotools import mask as coco_mask
 
-from datasets.data_util import preparing_dataset
 import datasets.transforms as T
+from datasets.data_util import preparing_dataset
 from util.box_ops import box_cxcywh_to_xyxy, box_iou
 
 __all__ = ['build']
@@ -103,7 +99,7 @@ class RandomSelectBoxlabels():
         self.blank_prob = blank_prob
 
         self.set_state(prob_first_item, prob_random_item, prob_last_item, prob_stop_sign)
-        
+
 
     def get_state(self):
         return [self.prob_first_item, self.prob_random_item, self.prob_last_item, self.prob_stop_sign]
@@ -119,7 +115,7 @@ class RandomSelectBoxlabels():
         self.prob_random_item = prob_random_item
         self.prob_last_item = prob_last_item
         self.prob_stop_sign = prob_stop_sign
-        
+
 
     def sample_for_pred_first_item(self, box_label: torch.FloatTensor):
         box_label_known = torch.Tensor(0,5)
@@ -232,8 +228,8 @@ class RandomCutout():
 
         known_box_add = torch.zeros(Ku, 6) # Ku, 6
         known_box_add[:, :5] = unknown_box
-        known_box_add[:, 5].uniform_(0.5, 1) 
-        
+        known_box_add[:, 5].uniform_(0.5, 1)
+
 
         known_box_add[:, :2] += known_box_add[:, 2:4] * (torch.rand(Ku, 2) - 0.5) / 2
         known_box_add[:, 2:4] /= 2
@@ -343,7 +339,7 @@ class CocoDetection(torchvision.datasets.CocoDetection):
         for item in self.aux_target_hacks:
             if isinstance(item, target_class):
                 return item
-            
+
     def _load_image(self, id: int) -> Image.Image:
         path = self.coco.loadImgs(id)[0]["file_name"]
         abs_path = os.path.join(self.root, path)
@@ -366,7 +362,7 @@ class CocoDetection(torchvision.datasets.CocoDetection):
         image_id = self.ids[idx]
         target = {'image_id': image_id, 'annotations': target}
         img, target = self.prepare(img, target)
-        
+
         if self._transforms is not None:
             img, target = self._transforms(img, target)
 
@@ -472,7 +468,7 @@ def make_coco_transforms(image_set, fix_size=False, strong_aug=False, args=None)
     max_size = 1333
     scales2_resize = [400, 500, 600]
     scales2_crop = [384, 600]
-    
+
     # update args from config files
     scales = getattr(args, 'data_aug_scales', scales)
     max_size = getattr(args, 'data_aug_max_size', max_size)
@@ -507,7 +503,7 @@ def make_coco_transforms(image_set, fix_size=False, strong_aug=False, args=None)
 
         if strong_aug:
             import datasets.sltransform as SLT
-            
+
             return T.Compose([
                 T.RandomHorizontalFlip(),
                 T.RandomSelect(
@@ -526,7 +522,7 @@ def make_coco_transforms(image_set, fix_size=False, strong_aug=False, args=None)
                 ]),
                 normalize,
             ])
-        
+
         return T.Compose([
             T.RandomHorizontalFlip(),
             T.RandomSelect(
@@ -547,7 +543,7 @@ def make_coco_transforms(image_set, fix_size=False, strong_aug=False, args=None)
             return T.Compose([
                 T.ResizeDebug((1280, 800)),
                 normalize,
-            ])   
+            ])
 
         return T.Compose([
             T.RandomResize([max(scales)], max_size=max_size),
@@ -562,8 +558,8 @@ def make_coco_transforms(image_set, fix_size=False, strong_aug=False, args=None)
 def get_aux_target_hacks_list(image_set, args):
     if args.modelname in ['q2bs_mask', 'q2bs']:
         aux_target_hacks_list = [
-            label2compat(), 
-            label_compat2onehot(), 
+            label2compat(),
+            label_compat2onehot(),
             RandomSelectBoxes(num_class=args.num_classes)
         ]
         if args.masked_data and image_set == 'train':
@@ -630,8 +626,8 @@ def build(image_set, args, datasetinfo):
     except:
         strong_aug = False
     print(img_folder, ann_file)
-    dataset = CocoDetection(img_folder, ann_file, 
-            transforms=make_coco_transforms(image_set, fix_size=args.fix_size, strong_aug=strong_aug, args=args), 
+    dataset = CocoDetection(img_folder, ann_file,
+            transforms=make_coco_transforms(image_set, fix_size=args.fix_size, strong_aug=strong_aug, args=args),
             return_masks=args.masks,
             aux_target_hacks=None,
         )

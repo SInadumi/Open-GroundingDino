@@ -243,7 +243,6 @@ class MultiScaleDeformableAttention(nn.Module):
         level_start_index: Optional[torch.Tensor] = None,
         **kwargs
     ) -> torch.Tensor:
-
         """Forward Function of MultiScaleDeformableAttention
 
         Args:
@@ -271,7 +270,6 @@ class MultiScaleDeformableAttention(nn.Module):
         Returns:
             torch.Tensor: forward results with shape `(num_query, bs, embed_dim)`
         """
-
         if value is None:
             value = query
 
@@ -328,7 +326,7 @@ class MultiScaleDeformableAttention(nn.Module):
                     reference_points.shape[-1]
                 )
             )
-    
+
         if torch.cuda.is_available() and value.is_cuda:
             halffloat = False
             if value.dtype == torch.float16:

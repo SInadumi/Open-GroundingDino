@@ -8,19 +8,17 @@ import os
 import sys
 from typing import Iterable
 
-from util.utils import to_device
 import torch
 
 import util.misc as utils
-from datasets.coco_eval import CocoEvaluator
 from datasets.cocogrounding_eval import CocoGroundingEvaluator
-
 from datasets.panoptic_eval import PanopticEvaluator
+from util.utils import to_device
 
 
 def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
                     data_loader: Iterable, optimizer: torch.optim.Optimizer,
-                    device: torch.device, epoch: int, max_norm: float = 0, 
+                    device: torch.device, epoch: int, max_norm: float = 0,
                     wo_class_error=False, lr_scheduler=None, args=None, logger=None):
     scaler = torch.cuda.amp.GradScaler(enabled=args.amp)
 
@@ -131,7 +129,7 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
         useCats = True
     if not useCats:
         print("useCats: {} !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!".format(useCats))
-    
+
     coco_evaluator = CocoGroundingEvaluator(base_ds, iou_types, useCats=useCats)
 
 
@@ -176,7 +174,7 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
         if 'segm' in postprocessors.keys():
             target_sizes = torch.stack([t["size"] for t in targets], dim=0)
             results = postprocessors['segm'](results, outputs, orig_target_sizes, target_sizes)
-            
+
         res = {target['image_id'].item(): output for target, output in zip(targets, results)}
 
         if coco_evaluator is not None:
@@ -191,7 +189,7 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
                 res_pano[i]["file_name"] = file_name
 
             panoptic_evaluator.update(res_pano)
-        
+
         if args.save_results:
 
 
@@ -216,7 +214,7 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
                 _res_prob = res['scores']
                 _res_label = res['labels']
                 res_info = torch.cat((_res_bbox, _res_prob.unsqueeze(-1), _res_label.unsqueeze(-1)), 1)
-       
+
 
                 if 'gt_info' not in output_state_dict:
                     output_state_dict['gt_info'] = []
@@ -240,7 +238,7 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
 
     if args.save_results:
         import os.path as osp
-        
+
         # output_state_dict['gt_info'] = torch.cat(output_state_dict['gt_info'])
         # output_state_dict['res_info'] = torch.cat(output_state_dict['res_info'])
         savepath = osp.join(args.output_dir, 'results-{}.pkl'.format(utils.get_rank()))
@@ -259,7 +257,7 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
     if coco_evaluator is not None:
         coco_evaluator.accumulate()
         coco_evaluator.summarize()
-        
+
     panoptic_res = None
     if panoptic_evaluator is not None:
         panoptic_res = panoptic_evaluator.summarize()

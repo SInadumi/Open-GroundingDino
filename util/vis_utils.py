@@ -1,8 +1,8 @@
 import cv2
 import numpy as np
 
-from util.utils import renorm
 from util.misc import color_sys
+from util.utils import renorm
 
 _color_getter = color_sys(100)
 
@@ -29,7 +29,7 @@ def add_box_to_img(img, boxes, colorlist, brands=None):
             font = cv2.FONT_HERSHEY_SIMPLEX
             fontScale = 0.5
             thickness = 1
-            img = cv2.putText(img.copy(), str(brand), org, font, 
+            img = cv2.putText(img.copy(), str(brand), org, font,
                 fontScale, color, thickness, cv2.LINE_AA)
     return img
 
@@ -47,7 +47,6 @@ def plot_dual_img(img, boxes, labels, idxs, probs=None):
         img_classcolor: np.array. H,W,3. img with class-wise label.
         img_seqcolor: np.array. H,W,3. img with seq-wise label.
     """
-
     boxes = [i.cpu().tolist() for i in boxes]
     img = (renorm(img.cpu()).permute(1,2,0).numpy() * 255).astype(np.uint8)
     # plot with class
@@ -71,7 +70,7 @@ def plot_raw_img(img, boxes, labels):
         boxes ([type]): Kx4. tensor
         labels ([type]): K. tensor.
 
-    return:
+    Return:
         img: np.array. H,W,3. img with bbox annos.
     
     """
@@ -86,7 +85,7 @@ def plot_raw_img(img, boxes, labels):
         font = cv2.FONT_HERSHEY_SIMPLEX
         fontScale = 1
         thickness = 1
-        img = cv2.putText(img.copy(), str(label), org, font, 
+        img = cv2.putText(img.copy(), str(label), org, font,
             fontScale, _color_getter(label), thickness, cv2.LINE_AA)
 
     return img

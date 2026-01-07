@@ -6,15 +6,15 @@ Mostly copy-paste from https://github.com/pytorch/vision/blob/edfd5a7/references
 The difference is that there is less copy-pasting from pycocotools
 in the end of the file, as python3 can suppress prints with contextlib
 """
-import os
 import contextlib
 import copy
-import numpy as np
-import torch
+import os
 
-from pycocotools.cocoeval import COCOeval
-from pycocotools.coco import COCO
+import numpy as np
 import pycocotools.mask as mask_util
+import torch
+from pycocotools.coco import COCO
+from pycocotools.cocoeval import COCOeval
 
 from util.misc import all_gather
 
@@ -96,7 +96,7 @@ class CocoEvaluator(object):
             else:
                 labels = prediction["labels"]
 
-        
+
             try:
                 coco_results.extend(
                     [
@@ -219,10 +219,10 @@ def create_common_coco_eval(coco_eval, img_ids, eval_imgs):
 
 
 def evaluate(self):
-    '''
+    """
     Run per image evaluation on given images and store results (a list of dict) in self.evalImgs
     :return: None
-    '''
+    """
     p = self.params
     # add backward compatibility if useSegm is specified in params
     if p.useSegm is not None:

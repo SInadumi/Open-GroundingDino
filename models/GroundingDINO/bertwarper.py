@@ -6,11 +6,7 @@
 # ------------------------------------------------------------------------
 
 import torch
-import torch.nn.functional as F
-import torch.utils.checkpoint as checkpoint
-from torch import Tensor, nn
-from torchvision.ops.boxes import nms
-from transformers import BertConfig, BertModel, BertPreTrainedModel
+from torch import nn
 from transformers.modeling_outputs import BaseModelOutputWithPoolingAndCrossAttentions
 
 
@@ -182,6 +178,7 @@ def generate_masks_with_special_tokens(tokenized, special_tokens_list, tokenizer
     Args:
         input_ids (torch.Tensor): input ids. Shape: [bs, num_token]
         special_tokens_mask (list): special tokens mask.
+
     Returns:
         torch.Tensor: attention mask between each special tokens.
     """
@@ -226,6 +223,7 @@ def generate_masks_with_special_tokens_and_transfer_map(tokenized, special_token
     Args:
         input_ids (torch.Tensor): input ids. Shape: [bs, num_token]
         special_tokens_mask (list): special tokens mask.
+
     Returns:
         torch.Tensor: attention mask between each special tokens.
     """

@@ -3,25 +3,24 @@
 import argparse
 import datetime
 import json
+import os
 import random
+import sys
 import time
 from pathlib import Path
-import os, sys
+
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, DistributedSampler
 
+import util.misc as utils
+from datasets import build_dataset, get_coco_api_from_dataset
+from engine import evaluate, train_one_epoch
+from groundingdino.util.utils import clean_state_dict
 from util.get_param_dicts import get_param_dict
 from util.logger import setup_logger
 from util.slconfig import DictAction, SLConfig
-from util.utils import  BestMetricHolder
-import util.misc as utils
-
-import datasets
-from datasets import build_dataset, get_coco_api_from_dataset
-from engine import evaluate, train_one_epoch
-
-from groundingdino.util.utils import clean_state_dict
+from util.utils import BestMetricHolder
 
 
 def get_args_parser():
@@ -83,7 +82,7 @@ def build_model_main(args):
 
 
 def main(args):
-    
+
 
     utils.setup_distributed(args)
     # load cfg file and update the args
@@ -157,7 +156,7 @@ def main(args):
     logger.info("params before freezing:\n"+json.dumps({n: p.numel() for n, p in model.named_parameters() if p.requires_grad}, indent=2))
 
     param_dicts = get_param_dict(args, model_without_ddp)
-    
+
     # freeze some layers
     if args.freeze_keywords is not None:
         for name, parameter in model.named_parameters():
@@ -230,7 +229,7 @@ def main(args):
         model_without_ddp.load_state_dict(clean_state_dict(checkpoint['model']),strict=False)
 
 
-        
+
         if not args.eval and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
             optimizer.load_state_dict(checkpoint['optimizer'])
             lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
@@ -255,8 +254,8 @@ def main(args):
         _load_output = model_without_ddp.load_state_dict(_tmp_st, strict=False)
         logger.info(str(_load_output))
 
- 
-    
+
+
     if args.eval:
         os.environ['EVAL_FLAG'] = 'TRUE'
         test_stats, coco_evaluator = evaluate(model, criterion, postprocessors,
@@ -270,9 +269,9 @@ def main(args):
                 f.write(json.dumps(log_stats) + "\n")
 
         return
-    
- 
-    
+
+
+
     print("Start training")
     start_time = time.time()
     best_map_holder = BestMetricHolder(use_ema=False)
@@ -305,7 +304,7 @@ def main(args):
                 }
 
                 utils.save_on_master(weights, checkpoint_path)
-                
+
         # eval
         test_stats, coco_evaluator = evaluate(
             model, criterion, postprocessors, data_loader_val, base_ds, device, args.output_dir,
@@ -332,7 +331,7 @@ def main(args):
             log_stats.update({'now_time': str(datetime.datetime.now())})
         except:
             pass
-        
+
         epoch_time = time.time() - epoch_start_time
         epoch_time_str = str(datetime.timedelta(seconds=int(epoch_time)))
         log_stats['epoch_time'] = epoch_time_str

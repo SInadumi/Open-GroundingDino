@@ -4,8 +4,7 @@ import os
 import re
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, Union, Optional
-
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 SpanKey = Union[str, Tuple[int, int]]
 

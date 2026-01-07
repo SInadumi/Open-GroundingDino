@@ -21,35 +21,25 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 from torchvision.ops.boxes import nms
-from transformers import AutoTokenizer, BertModel, BertTokenizer, RobertaModel, RobertaTokenizerFast
 
 from groundingdino.util import box_ops, get_tokenlizer
 from groundingdino.util.misc import (
     NestedTensor,
-    accuracy,
     get_world_size,
-    interpolate,
     inverse_sigmoid,
     is_dist_avail_and_initialized,
     nested_tensor_from_tensor_list,
 )
-from groundingdino.util.utils import get_phrases_from_posmap
-from groundingdino.util.visualizer import COCOVisualizer
-from groundingdino.util.vl_utils import create_positive_map_from_span
 
 from ..registry import MODULE_BUILD_FUNCS
 from .backbone import build_backbone
 from .bertwarper import (
     BertModelWarper,
-    generate_masks_with_special_tokens,
     generate_masks_with_special_tokens_and_transfer_map,
 )
-from .transformer import build_transformer
-from .utils import MLP, ContrastiveEmbed, sigmoid_focal_loss
-
 from .matcher import build_matcher
-
-
+from .transformer import build_transformer
+from .utils import MLP, ContrastiveEmbed
 
 
 class GroundingDINO(nn.Module):
@@ -316,7 +306,7 @@ class GroundingDINO(nn.Module):
             srcs, masks, input_query_bbox, poss, input_query_label, attn_mask, text_dict
         )
 
-        
+
         # deformable-detr-like anchor update
         outputs_coord_list = []
         for dec_lid, (layer_ref_sig, layer_bbox_embed, layer_hs) in enumerate(
@@ -406,7 +396,7 @@ class GroundingDINO(nn.Module):
 
 class SetCriterion(nn.Module):
     def __init__(self, matcher, weight_dict, focal_alpha,focal_gamma, losses):
-        """ Create the criterion.
+        """Create the criterion.
         Parameters:
             matcher: module able to compute a matching between targets and proposals
             weight_dict: dict containing as key the names of the losses and as values their relative weight.
@@ -422,10 +412,9 @@ class SetCriterion(nn.Module):
 
     @torch.no_grad()
     def loss_cardinality(self, outputs, targets, indices, num_boxes):
-        """ Compute the cardinality error, ie the absolute error in the number of predicted non-empty boxes
+        """Compute the cardinality error, ie the absolute error in the number of predicted non-empty boxes
         This is not really a loss, it is intended for logging purposes only. It doesn't propagate gradients
         """
-
         pred_logits = outputs['pred_logits']
         device = pred_logits.device
         tgt_lengths = torch.as_tensor([len(v["labels"]) for v in targets], device=device)
@@ -437,8 +426,8 @@ class SetCriterion(nn.Module):
 
     def loss_boxes(self, outputs, targets, indices, num_boxes):
         """Compute the losses related to the bounding boxes, the L1 regression loss and the GIoU loss
-           targets dicts must contain the key "boxes" containing a tensor of dim [nb_target_boxes, 4]
-           The target boxes are expected in format (center_x, center_y, w, h), normalized by the image size.
+        targets dicts must contain the key "boxes" containing a tensor of dim [nb_target_boxes, 4]
+        The target boxes are expected in format (center_x, center_y, w, h), normalized by the image size.
         """
         assert 'pred_boxes' in outputs
         idx = self._get_src_permutation_idx(indices)
@@ -471,12 +460,12 @@ class SetCriterion(nn.Module):
 
         assert (new_targets.dim() == 3)
         assert (pred_logits.dim() == 3)  # batch x from x to
-        
+
         bs, n, _ = pred_logits.shape
         alpha=self.focal_alpha
         gamma=self.focal_gamma
         if text_mask is not None:
-            # ODVG: each sample has different mask 
+            # ODVG: each sample has different mask
             text_mask = text_mask.repeat(1, pred_logits.size(1)).view(outputs['text_mask'].shape[0],-1,outputs['text_mask'].shape[1])
             pred_logits = torch.masked_select(pred_logits, text_mask)
             new_targets = torch.masked_select(new_targets, text_mask)
@@ -496,7 +485,7 @@ class SetCriterion(nn.Module):
             total_num_pos += len(batch_indices[0])
         num_pos_avg_per_gpu = max(total_num_pos , 1.0)
         loss=loss.sum()/num_pos_avg_per_gpu
-        
+
         losses = {'loss_ce': loss}
         return losses
 
@@ -523,7 +512,7 @@ class SetCriterion(nn.Module):
         return loss_map[loss](outputs, targets, indices, num_boxes, **kwargs)
 
     def forward(self, outputs, targets, cat_list, caption, return_indices=False):
-        """ This performs the loss computation.
+        """This performs the loss computation.
         Parameters:
              outputs: dict of tensors, see the output specification of the model for the format
              targets: list of dicts, such that len(targets) == batch_size.
@@ -533,8 +522,8 @@ class SetCriterion(nn.Module):
         """
         device=next(iter(outputs.values())).device
         one_hot = torch.zeros(outputs['pred_logits'].size(),dtype=torch.int64) # torch.Size([bs, 900, 256])
-        token = outputs['token'] 
-        
+        token = outputs['token']
+
         label_map_list = []
         indices = []
         for j in range(len(cat_list)): # bs
@@ -602,7 +591,7 @@ class SetCriterion(nn.Module):
                     indices_list.append(indices)
                 for loss in self.losses:
                     kwargs = {}
-                    l_dict = self.get_loss(loss, aux_outputs, targets, indices, num_boxes, **kwargs)                
+                    l_dict = self.get_loss(loss, aux_outputs, targets, indices, num_boxes, **kwargs)
                     l_dict = {k + f'_{idx}': v for k, v in l_dict.items()}
                     losses.update(l_dict)
 
@@ -629,7 +618,7 @@ class SetCriterion(nn.Module):
             for loss in self.losses:
                 kwargs = {}
                 l_dict = self.get_loss(loss, interm_outputs, targets, indices, num_boxes, **kwargs)
-                l_dict = {k + f'_interm': v for k, v in l_dict.items()}
+                l_dict = {k + '_interm': v for k, v in l_dict.items()}
                 losses.update(l_dict)
 
         if return_indices:
@@ -640,7 +629,7 @@ class SetCriterion(nn.Module):
 
 
 class PostProcess(nn.Module):
-    """ This module converts the model's output into the format expected by the coco api"""
+    """This module converts the model's output into the format expected by the coco api"""
     def __init__(self, num_select=100,text_encoder_type='text_encoder_type', nms_iou_threshold=-1,use_coco_eval=False,args=None) -> None:
         super().__init__()
         self.num_select = num_select
@@ -671,7 +660,7 @@ class PostProcess(nn.Module):
 
     @torch.no_grad()
     def forward(self, outputs, target_sizes, not_to_xyxy=False, test=False):
-        """ Perform the computation
+        """Perform the computation
         Parameters:
             outputs: raw outputs of the model
             target_sizes: tensor of dimension [batch_size x 2] containing the size of each images of the batch
@@ -707,7 +696,7 @@ class PostProcess(nn.Module):
         #     assert not not_to_xyxy
         #     boxes[:,:,2:] = boxes[:,:,2:] - boxes[:,:,:2]
         boxes = torch.gather(boxes, 1, topk_boxes.unsqueeze(-1).repeat(1,1,4))
-        
+
         # and from relative [0, 1] to absolute [0, height] coordinates
         img_h, img_w = target_sizes.unbind(1)
         scale_fct = torch.stack([img_w, img_h, img_w, img_h], dim=1)
@@ -765,7 +754,7 @@ def build_groundingdino(args):
     weight_dict['loss_giou'] = args.giou_loss_coef
     clean_weight_dict_wo_dn = copy.deepcopy(weight_dict)
 
-    
+
 
     clean_weight_dict = copy.deepcopy(weight_dict)
 
@@ -791,7 +780,7 @@ def build_groundingdino(args):
             interm_loss_coef = args.interm_loss_coef
         except:
             interm_loss_coef = 1.0
-        interm_weight_dict.update({k + f'_interm': v * interm_loss_coef * _coeff_weight_dict[k] for k, v in clean_weight_dict_wo_dn.items()})
+        interm_weight_dict.update({k + '_interm': v * interm_loss_coef * _coeff_weight_dict[k] for k, v in clean_weight_dict_wo_dn.items()})
         weight_dict.update(interm_weight_dict)
 
     # losses = ['labels', 'boxes', 'cardinality']
@@ -806,7 +795,7 @@ def build_groundingdino(args):
     return model, criterion, postprocessors
 
 def create_positive_map(tokenized, tokens_positive,cat_list,caption):
-    """construct a map such that positive_map[i,j] = True iff box i is associated to token j"""
+    """Construct a map such that positive_map[i,j] = True iff box i is associated to token j"""
     positive_map = torch.zeros((len(tokens_positive), 256), dtype=torch.float)
 
     for j,label in enumerate(tokens_positive):
@@ -852,6 +841,6 @@ def create_positive_map(tokenized, tokens_positive,cat_list,caption):
             continue
         # assert beg_pos is not None and end_pos is not None
         positive_map[j,beg_pos: end_pos + 1].fill_(1)
-    return positive_map 
+    return positive_map
 
 

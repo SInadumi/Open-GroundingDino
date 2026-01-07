@@ -1,5 +1,7 @@
-from transformers import AutoTokenizer, BertModel, BertTokenizer, RobertaModel, RobertaTokenizerFast
 import os
+
+from transformers import AutoTokenizer, BertModel, RobertaModel
+
 
 def get_tokenlizer(text_encoder_type):
     if not isinstance(text_encoder_type, str):

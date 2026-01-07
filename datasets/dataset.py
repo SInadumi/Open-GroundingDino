@@ -1,18 +1,17 @@
 from __future__ import print_function
 
-import torch
-import torchvision.datasets as datasets
-from torch.utils.data import Dataset
-from PIL import Image
-from .tsv_io import TSVFile
-import numpy as np
 import base64
 import io
 
+from PIL import Image
+from torch.utils.data import Dataset
+
+from .tsv_io import TSVFile
+
 
 class TSVDataset(Dataset):
-    """ TSV dataset for ImageNet 1K training
-    """    
+    """TSV dataset for ImageNet 1K training
+    """
     def __init__(self, tsv_file, transform=None, target_transform=None):
         self.tsv = TSVFile(tsv_file)
         self.transform = transform

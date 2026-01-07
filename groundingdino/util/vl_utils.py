@@ -6,7 +6,7 @@ import torch
 
 
 def create_positive_map_from_span(tokenized, token_span, max_text_len=256):
-    """construct a map such that positive_map[i,j] = True iff box i is associated to token j
+    """Construct a map such that positive_map[i,j] = True iff box i is associated to token j
     Input:
         - tokenized:
             - input_ids: Tensor[1, ntokens]
@@ -56,7 +56,6 @@ def build_captions_and_token_span(cat_list, force_lowercase):
                 ...
             }
     """
-
     cat2tokenspan = {}
     captions = ""
     for catname in cat_list:

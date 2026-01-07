@@ -1,15 +1,16 @@
 # modified from https://github.com/anhtuan85/Data-Augmentation-for-Object-Detection/blob/master/augmentation.ipynb
 
-import PIL #version 1.2.0
-from PIL import Image #version 6.1.0
-import torch
-import os
-import torchvision.transforms.functional as F
-import numpy as np
 import random
 
-from .random_crop import random_crop
+import numpy as np
+import torch
+import torchvision.transforms.functional as F
+from PIL import Image  #version 6.1.0
+
 from util.box_ops import box_cxcywh_to_xyxy, box_xyxy_to_cxcywh
+
+from .random_crop import random_crop
+
 
 class AdjustContrast:
     def __init__(self, contrast_factor):
@@ -17,7 +18,7 @@ class AdjustContrast:
 
     def __call__(self, img, target):
         """
-        img (PIL Image or Tensor): Image to be adjusted.
+        Img (PIL Image or Tensor): Image to be adjusted.
         """
         _contrast_factor = ((random.random() + 1.0) / 2.0) * self.contrast_factor
         img = F.adjust_contrast(img, _contrast_factor)
@@ -29,19 +30,19 @@ class AdjustBrightness:
 
     def __call__(self, img, target):
         """
-        img (PIL Image or Tensor): Image to be adjusted.
+        Img (PIL Image or Tensor): Image to be adjusted.
         """
         _brightness_factor = ((random.random() + 1.0) / 2.0) * self.brightness_factor
         img = F.adjust_brightness(img, _brightness_factor)
         return img, target
 
 def lighting_noise(image):
-    '''
-        color channel swap in image
-        image: A PIL image
-    '''
+    """
+    Color channel swap in image
+    image: A PIL image
+    """
     new_image = image
-    perms = ((0, 1, 2), (0, 2, 1), (1, 0, 2), 
+    perms = ((0, 1, 2), (0, 2, 1), (1, 0, 2),
              (1, 2, 0), (2, 0, 1), (2, 1, 0))
     swap = perms[random.randint(0, len(perms)- 1)]
     new_image = F.to_tensor(new_image)
@@ -58,16 +59,16 @@ class LightingNoise:
 
 
 def rotate(image, boxes, angle):
-    '''
-        Rotate image and bounding box
-        image: A Pil image (w, h)
-        boxes: A tensors of dimensions (#objects, 4)
+    """
+    Rotate image and bounding box
+    image: A Pil image (w, h)
+    boxes: A tensors of dimensions (#objects, 4)
         
-        Out: rotated image (w, h), rotated boxes
-    '''
+    Out: rotated image (w, h), rotated boxes
+    """
     new_image = image.copy()
     new_boxes = boxes.clone()
-    
+
     #Rotate image, expand = True
     w = image.width
     h = image.height
@@ -80,45 +81,45 @@ def rotate(image, boxes, angle):
     #Get affine matrix
     AffineMatrix = torch.tensor([[alpha, beta, (1-alpha)*cx - beta*cy],
                                  [-beta, alpha, beta*cx + (1-alpha)*cy]])
-    
+
     #Rotation boxes
     box_width = (boxes[:,2] - boxes[:,0]).reshape(-1,1)
     box_height = (boxes[:,3] - boxes[:,1]).reshape(-1,1)
-    
+
     #Get corners for boxes
     x1 = boxes[:,0].reshape(-1,1)
     y1 = boxes[:,1].reshape(-1,1)
-    
+
     x2 = x1 + box_width
-    y2 = y1 
-    
+    y2 = y1
+
     x3 = x1
     y3 = y1 + box_height
-    
+
     x4 = boxes[:,2].reshape(-1,1)
     y4 = boxes[:,3].reshape(-1,1)
-    
+
     corners = torch.stack((x1,y1,x2,y2,x3,y3,x4,y4), dim= 1)
     # corners.reshape(-1, 8)    #Tensors of dimensions (#objects, 8)
     corners = corners.reshape(-1,2) #Tensors of dimension (4* #objects, 2)
     corners = torch.cat((corners, torch.ones(corners.shape[0], 1)), dim= 1) #(Tensors of dimension (4* #objects, 3))
-    
+
     cos = np.abs(AffineMatrix[0, 0])
     sin = np.abs(AffineMatrix[0, 1])
-    
+
     nW = int((h * sin) + (w * cos))
     nH = int((h * cos) + (w * sin))
     AffineMatrix[0, 2] += (nW / 2) - cx
     AffineMatrix[1, 2] += (nH / 2) - cy
-    
+
 
     #Apply affine transform
     rotate_corners = torch.mm(AffineMatrix, corners.t().to(torch.float64)).t()
     rotate_corners = rotate_corners.reshape(-1,8)
-    
+
     x_corners = rotate_corners[:,[0,2,4,6]]
     y_corners = rotate_corners[:,[1,3,5,7]]
-    
+
     #Get (x_min, y_min, x_max, y_max)
     x_min, _ = torch.min(x_corners, dim= 1)
     x_min = x_min.reshape(-1, 1)
@@ -128,16 +129,16 @@ def rotate(image, boxes, angle):
     x_max = x_max.reshape(-1, 1)
     y_max, _ = torch.max(y_corners, dim= 1)
     y_max = y_max.reshape(-1, 1)
-    
+
     new_boxes = torch.cat((x_min, y_min, x_max, y_max), dim= 1)
-    
+
     scale_x = new_image.width / w
     scale_y = new_image.height / h
-    
+
     #Resize new image to (w, h)
 
     new_image = new_image.resize((w, h))
-    
+
     #Resize boxes
     new_boxes /= torch.Tensor([scale_x, scale_y, scale_x, scale_y])
     new_boxes[:, 0] = torch.clamp(new_boxes[:, 0], 0, w)
@@ -150,7 +151,7 @@ def rotate(image, boxes, angle):
 #     _boxes = boxes.clone()
 #     box_xy = _boxes[:, :2]
 #     box_wh = _boxes[:, 2:]
-#     box_x1y1 = box_xy - box_wh/2 
+#     box_x1y1 = box_xy - box_wh/2
 #     box_x2y2 = box_xy + box_wh/2
 #     box_xyxy = torch.cat((box_x1y1, box_x2y2), dim=-1)
 #     return box_xyxy
@@ -180,7 +181,7 @@ class RandomCrop:
             img, new_boxes, new_labels, _ = random_crop(img, boxes_xyxy, labels)
             target['boxes'] = new_boxes
             target['labels'] = new_labels
-        except Exception as e:
+        except Exception:
             pass
         return img, target
 
@@ -198,7 +199,7 @@ class RandomCropDebug:
 
 
         return img, target
-        
+
 class RandomSelectMulti(object):
     """
     Randomly selects between transforms1 and transforms2,
@@ -243,5 +244,5 @@ class Albumentations:
         img_new = Image.fromarray(img_np)
         target['boxes'] = boxes_new
         target['labels'] = labels_new
-        
+
         return img_new, target

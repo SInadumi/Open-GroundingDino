@@ -105,7 +105,6 @@ def _get_global_gloo_group():
     Return a process group based on gloo backend, containing all the ranks
     The result is cached.
     """
-
     if dist.get_backend() == "nccl":
         return dist.new_group(backend="gloo")
 
@@ -115,12 +114,12 @@ def _get_global_gloo_group():
 def all_gather_cpu(data):
     """
     Run all_gather on arbitrary picklable data (not necessarily tensors)
+
     Args:
         data: any picklable object
     Returns:
         list[data]: list of data gathered from each rank
     """
-
     world_size = get_world_size()
     if world_size == 1:
         return [data]
@@ -173,12 +172,12 @@ def all_gather_cpu(data):
 def all_gather(data):
     """
     Run all_gather on arbitrary picklable data (not necessarily tensors)
+
     Args:
         data: any picklable object
     Returns:
         list[data]: list of data gathered from each rank
     """
-
     if os.getenv("CPU_REDUCE") == "1":
         return all_gather_cpu(data)
 
@@ -441,7 +440,7 @@ class NestedTensor(object):
         return img
 
     def to_img_list(self):
-        """remove the padding and convert to img list
+        """Remove the padding and convert to img list
 
         Returns:
             [type]: [description]

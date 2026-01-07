@@ -2,14 +2,19 @@
 # Modified from mmcv
 # ==========================================================
 
-import json, pickle, yaml
-try:
-    from yaml import CLoader as Loader, CDumper as Dumper
-except ImportError:
-    from yaml import Loader, Dumper
+import json
+import pickle
 
-from pathlib import Path
+import yaml
+
+try:
+    from yaml import CDumper as Dumper
+    from yaml import CLoader as Loader
+except ImportError:
+    from yaml import Dumper, Loader
+
 from abc import ABCMeta, abstractmethod
+from pathlib import Path
 
 # ===========================
 # Rigister handler

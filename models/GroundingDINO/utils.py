@@ -27,13 +27,14 @@ def get_sine_pos_embed(
     temperature: int = 10000,
     exchange_xy: bool = True,
 ):
-    """generate sine position embedding from a position tensor
+    """Generate sine position embedding from a position tensor
     Args:
         pos_tensor (torch.Tensor): shape: [..., n].
         num_pos_feats (int): projected shape for each float in the tensor.
         temperature (int): temperature in the sine/cosine function.
         exchange_xy (bool, optional): exchange pos x and pos y. \
             For example, input tensor is [x,y], the results will be [pos(y), pos(x)]. Defaults to True.
+
     Returns:
         pos_embed (torch.Tensor): shape: [..., n*num_pos_feats].
     """
@@ -56,7 +57,7 @@ def get_sine_pos_embed(
 def gen_encoder_output_proposals(
     memory: Tensor, memory_padding_mask: Tensor, spatial_shapes: Tensor, learnedwh=None
 ):
-    """
+    r"""
     Input:
         - memory: bs, \sum{hw}, d_model
         - memory_padding_mask: bs, \sum{hw}
@@ -140,6 +141,7 @@ def sigmoid_focal_loss(
 ):
     """
     Loss used in RetinaNet for dense detection: https://arxiv.org/abs/1708.02002.
+
     Args:
         inputs: A float tensor of arbitrary shape.
                 The predictions for each example.
@@ -150,6 +152,7 @@ def sigmoid_focal_loss(
                 positive vs negative examples. Default = -1 (no weighting).
         gamma: Exponent of the modulating factor (1 - p_t) to
                balance easy vs hard examples.
+
     Returns:
         Loss tensor
     """
@@ -250,6 +253,7 @@ class ContrastiveEmbed(nn.Module):
                 'text_token_mask': text_token_mask, # bs, 195
                         # True for used tokens. False for padding tokens
             }
+
         Returns:
             _type_: _description_
         """

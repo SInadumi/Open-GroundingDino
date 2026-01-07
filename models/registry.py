@@ -39,6 +39,7 @@ class Registry(object):
 
     def register(self, module_build_function, module_name=None, force=False):
         """Register a module build function.
+
         Args:
             module (:obj:`nn.Module`): Module to be registered.
         """

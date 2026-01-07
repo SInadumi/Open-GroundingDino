@@ -138,7 +138,7 @@ class SLConfig(object):
 
     @staticmethod
     def _merge_a_into_b(a, b):
-        """merge dict `a` into dict `b` (non-inplace).
+        """Merge dict `a` into dict `b` (non-inplace).
             values in `a` will overwrite `b`.
             copy first to avoid inplace modification
 

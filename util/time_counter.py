@@ -1,10 +1,11 @@
 import json
 import time
 
+
 class TimeCounter:
     def __init__(self) -> None:
         pass
-    
+
     def clear(self):
         self.timedict = {}
         self.basetime = time.perf_counter()
@@ -27,7 +28,7 @@ class TimeHolder:
 
     def final_res(self):
         return {k:v.avg for k,v in self.timedict.items()}
-        
+
     def __str__(self):
         return json.dumps(self.final_res(), indent=2)
 

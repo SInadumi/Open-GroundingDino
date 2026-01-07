@@ -4,25 +4,24 @@ Misc functions, including distributed helpers.
 
 Mostly copy-paste from torchvision references.
 """
+import colorsys
+import datetime
+import json
 import os
-import random 
+import pickle
 import subprocess
 import time
 from collections import OrderedDict, defaultdict, deque
-import datetime
-import pickle
-from typing import Optional, List
+from typing import List, Optional
 
-import json, time
 import numpy as np
 import torch
 import torch.distributed as dist
-from torch import Tensor
-
-import colorsys
 
 # needed due to empty tensor bug in pytorch and torchvision 0.5
 import torchvision
+from torch import Tensor
+
 __torchvision_need_compat_flag = float(torchvision.__version__.split('.')[1]) < 7
 if __torchvision_need_compat_flag:
     from torchvision.ops import _new_empty_tensor
@@ -96,6 +95,7 @@ class SmoothedValue(object):
 def all_gather(data):
     """
     Run all_gather on arbitrary picklable data (not necessarily tensors)
+
     Args:
         data: any picklable object
     Returns:
@@ -339,7 +339,7 @@ class NestedTensor(object):
         return img
 
     def to_img_list(self):
-        """remove the padding and convert to img list
+        """Remove the padding and convert to img list
 
         Returns:
             [type]: [description]
@@ -473,7 +473,7 @@ def save_on_master(*args, **kwargs):
 
 
 def init_distributed_mode(args):
-    if 'WORLD_SIZE' in os.environ and os.environ['WORLD_SIZE'] != '': # 'RANK' in os.environ and 
+    if 'WORLD_SIZE' in os.environ and os.environ['WORLD_SIZE'] != '': # 'RANK' in os.environ and
         # args.rank = int(os.environ["RANK"])
         # args.world_size = int(os.environ['WORLD_SIZE'])
         # args.gpu = args.local_rank = int(os.environ['LOCAL_RANK'])
@@ -518,7 +518,7 @@ def init_distributed_mode(args):
     setup_for_distributed(args.rank == 0)
 
 def setup_distributed(args):
-    if 'WORLD_SIZE' in os.environ and os.environ['WORLD_SIZE'] != '': # 'RANK' in os.environ and 
+    if 'WORLD_SIZE' in os.environ and os.environ['WORLD_SIZE'] != '': # 'RANK' in os.environ and
         local_world_size = int(os.environ['WORLD_SIZE'])
         args.world_size = args.world_size * local_world_size
         args.gpu = args.local_rank = int(os.environ['LOCAL_RANK'])

@@ -1,10 +1,12 @@
-import xml.etree.ElementTree as ET
-import jsonlines
-import random
-from tqdm import tqdm
 import argparse
-import os
 import glob
+import os
+import random
+import xml.etree.ElementTree as ET
+
+import jsonlines
+from tqdm import tqdm
+
 
 def get_sentence_data(fn):
     """
@@ -167,7 +169,7 @@ if __name__ == "__main__":
         sds = get_sentence_data(sentence_list[idx])
         an = get_annotations(annotation_list[idx])
         if args.osoi:
-            sd = sds[random.randint(0, len(sds)-1)] 
+            sd = sds[random.randint(0, len(sds)-1)]
             x = gen_record(sd, an)
             if x:
                 odvg_anno.append(x)

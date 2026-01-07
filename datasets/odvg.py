@@ -1,14 +1,18 @@
-from torchvision.datasets.vision import VisionDataset
-import os.path
-from typing import Callable, Optional
 import json
-from PIL import Image
-import torch
+import os
+import os.path
 import random
-import os, sys
+import sys
+from typing import Callable, Optional
+
+import torch
+from PIL import Image
+from torchvision.datasets.vision import VisionDataset
+
 sys.path.append(os.path.dirname(sys.path[0]))
 
 import datasets.transforms as T
+
 
 class ODVGDataset(VisionDataset):
     """
@@ -80,7 +84,7 @@ class ODVGDataset(VisionDataset):
             num_to_add = min(len(neg_labels), self.max_labels-len(pos_labels))
             if num_to_add > 0:
                 vg_labels.extend(random.sample(neg_labels, num_to_add))
-            
+
             # shuffle
             for i in range(len(vg_labels)-1, 0, -1):
                 j = random.randint(0, i)
@@ -122,7 +126,7 @@ class ODVGDataset(VisionDataset):
             image, target = self.transforms(image, target)
 
         return image, target
-    
+
 
     def __len__(self) -> int:
         return len(self.metas)
@@ -140,7 +144,7 @@ def make_coco_transforms(image_set, fix_size=False, strong_aug=False, args=None)
     max_size = 1333
     scales2_resize = [400, 500, 600]
     scales2_crop = [384, 600]
-    
+
     # update args from config files
     scales = getattr(args, 'data_aug_scales', scales)
     max_size = getattr(args, 'data_aug_max_size', max_size)
@@ -174,7 +178,7 @@ def make_coco_transforms(image_set, fix_size=False, strong_aug=False, args=None)
 
         if strong_aug:
             import datasets.sltransform as SLT
-            
+
             return T.Compose([
                 T.RandomHorizontalFlip(),
                 T.RandomSelect(
@@ -193,7 +197,7 @@ def make_coco_transforms(image_set, fix_size=False, strong_aug=False, args=None)
                 ]),
                 normalize,
             ])
-        
+
         return T.Compose([
             T.RandomHorizontalFlip(),
             T.RandomSelect(
@@ -214,7 +218,7 @@ def make_coco_transforms(image_set, fix_size=False, strong_aug=False, args=None)
             return T.Compose([
                 T.ResizeDebug((1280, 800)),
                 normalize,
-            ])   
+            ])
 
         return T.Compose([
             T.RandomResize([max(scales)], max_size=max_size),
@@ -233,7 +237,7 @@ def build_odvg(image_set, args, datasetinfo):
         strong_aug = False
     print(img_folder, ann_file, label_map)
     dataset = ODVGDataset(img_folder, ann_file, label_map, max_labels=args.max_labels,
-            transforms=make_coco_transforms(image_set, fix_size=args.fix_size, strong_aug=strong_aug, args=args), 
+            transforms=make_coco_transforms(image_set, fix_size=args.fix_size, strong_aug=strong_aug, args=args),
     )
     return dataset
 
@@ -241,12 +245,12 @@ def build_odvg(image_set, args, datasetinfo):
 if __name__=="__main__":
     dataset_vg = ODVGDataset("path/GRIT-20M/data/","path/GRIT-20M/anno/grit_odvg_10k.jsonl",)
     print(len(dataset_vg))
-    data = dataset_vg[random.randint(0, 100)] 
+    data = dataset_vg[random.randint(0, 100)]
     print(data)
     dataset_od = ODVGDataset("pathl/V3Det/",
         "path/V3Det/annotations/v3det_2023_v1_all_odvg.jsonl",
         "path/V3Det/annotations/v3det_label_map.json",
     )
     print(len(dataset_od))
-    data = dataset_od[random.randint(0, 100)] 
+    data = dataset_od[random.randint(0, 100)]
     print(data)

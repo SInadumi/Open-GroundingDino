@@ -1,30 +1,27 @@
 # -*- coding: utf-8 -*-
-'''
+"""
 @File    :   visualizer.py
 @Time    :   2022/04/05 11:39:33
 @Author  :   Shilong Liu 
 @Contact :   liusl20@mail.tsinghua.edu.cn; slongliu86@gmail.com
 Modified from COCO evaluator
-'''
+"""
 
-import os, sys
-from textwrap import wrap
-import torch
-import numpy as np
-import cv2
 import datetime
+import os
 
 import matplotlib.pyplot as plt
+import numpy as np
+import torch
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
-from pycocotools import mask as maskUtils
-from matplotlib import transforms
+
 
 def renorm(img: torch.FloatTensor, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) \
         -> torch.FloatTensor:
     # img: tensor(3,H,W) or tensor(B,3,H,W)
     # return: same as img
-    assert img.dim() == 3 or img.dim() == 4, "img.dim() should be 3 or 4 but %d" % img.dim() 
+    assert img.dim() == 3 or img.dim() == 4, "img.dim() should be 3 or 4 but %d" % img.dim()
     if img.dim() == 3:
         assert img.size(0) == 3, 'img.size(0) shoule be 3 but "%d". (%s)' % (img.size(0), str(img.size()))
         img_perm = img.permute(1,2,0)
@@ -70,7 +67,7 @@ class COCOVisualizer():
         ax = plt.gca()
         img = renorm(img).permute(1, 2, 0)
         ax.imshow(img)
-        
+
         self.addtgt(tgt)
         if show_in_console:
             plt.show()
@@ -93,7 +90,7 @@ class COCOVisualizer():
         """
         assert 'boxes' in tgt
         ax = plt.gca()
-        H, W = tgt['size'].tolist() 
+        H, W = tgt['size'].tolist()
         numbox = tgt['boxes'].shape[0]
 
         color = []

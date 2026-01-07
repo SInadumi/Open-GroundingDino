@@ -1,7 +1,8 @@
 import argparse
+import json
+
 import jsonlines
 from tqdm import tqdm
-import json
 
 # this id_map is only for coco dataset which has 80 classes used for training but 90 categories in total.
 # which change the start label -> 0

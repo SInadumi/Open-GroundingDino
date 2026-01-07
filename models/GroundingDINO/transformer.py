@@ -519,7 +519,6 @@ class TransformerEncoder(nn.Module):
         Outpus:
             - output: [bs, sum(hi*wi), 256]
         """
-
         output = src
 
         # preparation and reshape
@@ -666,7 +665,7 @@ class TransformerDecoder(nn.Module):
         reference_points = refpoints_unsigmoid.sigmoid()
         ref_points = [reference_points]
 
-        
+
 
         for layer_id, layer in enumerate(self.layers):
 

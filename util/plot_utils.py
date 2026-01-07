@@ -1,17 +1,17 @@
 """
 Plotting utilities to visualize training logs.
 """
-import torch
-import pandas as pd
-import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
-
 from pathlib import Path, PurePath
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import torch
 
 
 def plot_logs(logs, fields=('class_error', 'loss_bbox_unscaled', 'mAP'), ewm_col=0, log_name='log.txt'):
-    '''
+    """
     Function to plot specific fields from training log(s). Plots both training and test results.
 
     :: Inputs - logs = list containing Path objects, each pointing to individual dir with a log file
@@ -22,7 +22,7 @@ def plot_logs(logs, fields=('class_error', 'loss_bbox_unscaled', 'mAP'), ewm_col
     :: Outputs - matplotlib plots of results in fields, color coded for each log file.
                - solid lines are training results, dashed lines are test results.
 
-    '''
+    """
     func_name = "plot_utils.py::plot_logs"
 
     # verify logs is a list of Paths (list[Paths]) or single Pathlib object Path,
@@ -73,7 +73,7 @@ def plot_logs(logs, fields=('class_error', 'loss_bbox_unscaled', 'mAP'), ewm_col
             ax.legend([Path(p).name for p in logs])
             ax.set_title(field)
         else:
-            ax.legend([f'train', f'test'])
+            ax.legend(['train', 'test'])
             ax.set_title(field)
 
     return fig, axs

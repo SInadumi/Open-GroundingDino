@@ -306,7 +306,7 @@ def inverse_sigmoid(x, eps=1e-5):
 
 def get_raw_dict(args):
     """
-    return the dicf contained in args.
+    Return the dicf contained in args.
 
     e.g:
         >>> with open(path, 'w') as f:
@@ -423,7 +423,6 @@ def ensure_rng(rng=None):
     References:
         .. [1] https://gitlab.kitware.com/computer-vision/kwarray/blob/master/kwarray/util_random.py#L270  # noqa: E501
     """
-
     if rng is None:
         rng = np.random.mtrand._rand
     elif isinstance(rng, int):
@@ -545,7 +544,7 @@ class BestMetricHolder:
 
     def update(self, new_res, epoch, is_ema=False):
         """
-        return if the results is the best.
+        Return if the results is the best.
         """
         if not self.use_ema:
             return self.best_all.update(new_res, epoch)
