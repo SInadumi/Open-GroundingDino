@@ -225,7 +225,7 @@ def main(args):
             checkpoint = torch.hub.load_state_dict_from_url(
                 args.resume, map_location='cpu', check_hash=True)
         else:
-            checkpoint = torch.load(args.resume, map_location='cpu')
+            checkpoint = torch.load(args.resume, map_location='cpu', weights_only=False)
         model_without_ddp.load_state_dict(clean_state_dict(checkpoint['model']),strict=False)
 
 
@@ -236,7 +236,7 @@ def main(args):
             args.start_epoch = checkpoint['epoch'] + 1
 
     if (not args.resume) and args.pretrain_model_path:
-        checkpoint = torch.load(args.pretrain_model_path, map_location='cpu')['model']
+        checkpoint = torch.load(args.pretrain_model_path, map_location='cpu', weights_only=False)['model']
         from collections import OrderedDict
         _ignorekeywordlist = args.finetune_ignore if args.finetune_ignore else []
         ignorelist = []
