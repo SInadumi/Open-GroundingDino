@@ -172,7 +172,7 @@ def main() -> None:
                 ann["annotations"]["question"][(beg, end)] = box_id  # type: ignore
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = args.out_dir / f"gqa_{args.split}.jsonl"
+    out_path = args.out_dir / f"gqa_{args.split}_odvg.jsonl"
 
     num_written = 0
     num_skipped_no_regions = 0
