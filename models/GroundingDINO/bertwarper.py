@@ -18,7 +18,7 @@ class BertModelWarper(nn.Module):
         self.config = bert_model.config
         self.embeddings = bert_model.embeddings
         self.encoder = bert_model.encoder
-        self.pooler = bert_model.pooler
+        self.pooler = getattr(bert_model, "pooler", None)
 
         self.get_extended_attention_mask = bert_model.get_extended_attention_mask
         self.invert_attention_mask = bert_model.invert_attention_mask

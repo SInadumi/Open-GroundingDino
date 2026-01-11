@@ -1,0 +1,22 @@
+{
+  "train": [
+    {
+      "root": "/mnt/home/shun-i/datasets/Flickr30kEnt-JP/flickr30k_images/",
+      "anno": "/mnt/home/shun-i/dev/Open-GroundingDino/DATASET/f30k_ent_jp/flickr30k_entities_ja_train_odvg.jsonl",
+      "dataset_mode": "odvg"
+    },
+    {
+      "root": "/mnt/home/shun-i/datasets/gqa/images/",
+      "anno": "/mnt/home/shun-i/dev/Open-GroundingDino/DATASET/gqa/gqa_train_odvg.jsonl",
+      "dataset_mode": "odvg"
+    }
+  ],
+  "val": [
+    {
+      "root": "/mnt/home/shun-i/datasets/mscoco/val2017/",
+      "anno": "config/instances_val2017.json",
+      "label_map": null,
+      "dataset_mode": "coco"
+    }
+  ]
+}

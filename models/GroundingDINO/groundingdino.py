@@ -35,6 +35,7 @@ from ..registry import MODULE_BUILD_FUNCS
 from .backbone import build_backbone
 from .bertwarper import (
     BertModelWarper,
+    TextEncoderShell,
     generate_masks_with_special_tokens_and_transfer_map,
 )
 from .matcher import build_matcher
@@ -100,9 +101,16 @@ class GroundingDINO(nn.Module):
         # bert
         self.tokenizer = get_tokenlizer.get_tokenlizer(text_encoder_type)
         self.bert = get_tokenlizer.get_pretrained_language_model(text_encoder_type)
-        self.bert.pooler.dense.weight.requires_grad_(False)
-        self.bert.pooler.dense.bias.requires_grad_(False)
-        self.bert = BertModelWarper(bert_model=self.bert)
+        if hasattr(self.bert, "pooler") and getattr(self.bert.pooler, "dense", None) is not None:
+            self.bert.pooler.dense.weight.requires_grad_(False)
+            self.bert.pooler.dense.bias.requires_grad_(False)
+
+        model_type = getattr(getattr(self.bert, "config", None), "model_type", None)
+        self.text_encoder_model_type = model_type
+        if model_type in {"bert", "roberta"}:
+            self.bert = BertModelWarper(bert_model=self.bert)
+        else:
+            self.bert = TextEncoderShell(self.bert)
 
         self.feat_map = nn.Linear(self.bert.config.hidden_size, self.hidden_dim, bias=True)
         nn.init.constant_(self.feat_map.bias.data, 0)
@@ -247,7 +255,7 @@ class GroundingDINO(nn.Module):
             tokenized["token_type_ids"] = tokenized["token_type_ids"][:, : self.max_text_len]
 
         # extract text embeddings
-        if self.sub_sentence_present:
+        if self.sub_sentence_present and self.text_encoder_model_type in {"bert", "roberta"}:
             tokenized_for_encoder = {k: v for k, v in tokenized.items() if k != "attention_mask"}
             tokenized_for_encoder["attention_mask"] = text_self_attention_masks
             tokenized_for_encoder["position_ids"] = position_ids
@@ -517,7 +525,7 @@ class SetCriterion(nn.Module):
              outputs: dict of tensors, see the output specification of the model for the format
              targets: list of dicts, such that len(targets) == batch_size.
                       The expected keys in each dict depends on the losses applied, see each loss' doc
-            
+
              return_indices: used for vis. if True, the layer0-5 indices will be returned as well.
         """
         device=next(iter(outputs.values())).device
@@ -842,5 +850,3 @@ def create_positive_map(tokenized, tokens_positive,cat_list,caption):
         # assert beg_pos is not None and end_pos is not None
         positive_map[j,beg_pos: end_pos + 1].fill_(1)
     return positive_map
-
-
