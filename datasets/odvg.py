@@ -102,25 +102,29 @@ class ODVGDataset(VisionDataset):
             instances = [obj for obj in anno["regions"]]
             boxes = [obj["bbox"] for obj in instances]
             caption_list = [obj["phrase"] for obj in instances]
-            c = list(zip(boxes, caption_list))
-            random.shuffle(c)
-            boxes[:], caption_list[:] = zip(*c)
-            uni_caption_list  = list(set(caption_list))
-            label_map = {}
-            for idx in range(len(uni_caption_list)):
-                label_map[uni_caption_list[idx]] = idx
-            classes = [label_map[cap] for cap in caption_list]
-            caption = ' . '.join(uni_caption_list) + ' .'
-            boxes = torch.as_tensor(boxes, dtype=torch.float32).reshape(-1, 4)
-            classes = torch.tensor(classes, dtype=torch.int64)
-            caption_list = uni_caption_list
+            has_spans = bool(instances) and all("span" in obj for obj in instances)
+            if has_spans:
+                spans = [obj["span"] for obj in instances]
+                caption = anno["caption"]
+                boxes = torch.as_tensor(boxes, dtype=torch.float32).reshape(-1, 4)
+                classes = torch.arange(len(boxes), dtype=torch.int64)
+            else:
+                uni_caption_list = list(set(caption_list))
+                label_map = {cap: idx for idx, cap in enumerate(uni_caption_list)}
+                classes = [label_map[cap] for cap in caption_list]
+                caption = ' . '.join(uni_caption_list) + ' .'
+                boxes = torch.as_tensor(boxes, dtype=torch.float32).reshape(-1, 4)
+                classes = torch.tensor(classes, dtype=torch.int64)
+                caption_list = uni_caption_list
         target = {}
         target["size"] = torch.as_tensor([int(h), int(w)])
         target["cap_list"] = caption_list
         target["caption"] = caption
         target["boxes"] = boxes
         target["labels"] = classes
-        # size, cap_list, caption, bboxes, labels
+        if self.dataset_mode == "VG" and has_spans:
+            target["token_span"] = [[span] for span in spans]
+        # size, cap_list, caption, bboxes, labels, spans (optional)
 
         if self.transforms is not None:
             image, target = self.transforms(image, target)

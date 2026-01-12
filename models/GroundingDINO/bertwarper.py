@@ -269,3 +269,29 @@ def generate_masks_with_special_tokens_and_transfer_map(tokenized, special_token
     # attention_mask = attention_mask & padding_mask.unsqueeze(1).bool() & padding_mask.unsqueeze(2).bool()
 
     return attention_mask, position_ids.to(torch.long), cate_to_token_mask_list
+
+
+def generate_masks_for_sentence(tokenized, special_tokens_list):
+    """Generate masks for sentence-level captions (no sub-sentence splits)."""
+    input_ids = tokenized["input_ids"]
+    bs, num_token = input_ids.shape
+    special_tokens_mask = torch.zeros((bs, num_token), device=input_ids.device).bool()
+    for special_token in special_tokens_list:
+        special_tokens_mask |= input_ids == special_token
+
+    attention_mask = torch.ones((bs, num_token, num_token), device=input_ids.device).bool()
+    position_ids = torch.arange(num_token, device=input_ids.device).unsqueeze(0).repeat(bs, 1)
+    position_ids[special_tokens_mask] = 0
+
+    padding_mask = tokenized["attention_mask"].bool()
+    cate_to_token_mask_list = []
+    for row in range(bs):
+        c2t_maski = (~special_tokens_mask[row]) & padding_mask[row]
+        cate_to_token_mask_list.append([c2t_maski])
+
+    cate_to_token_mask_list = [
+        torch.stack(cate_to_token_mask_listi, dim=0)
+        for cate_to_token_mask_listi in cate_to_token_mask_list
+    ]
+
+    return attention_mask, position_ids.to(torch.long), cate_to_token_mask_list

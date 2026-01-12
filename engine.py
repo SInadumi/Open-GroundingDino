@@ -40,9 +40,13 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         samples = samples.to(device)
         captions = [t["caption"] for t in targets]
         cap_list = [t["cap_list"] for t in targets]
-        targets = [{k: v.to(device) for k, v in t.items() if torch.is_tensor(v)} for t in targets]
+        sentence_mode = any("token_span" in t for t in targets)
+        targets = [
+            {k: (v.to(device) if torch.is_tensor(v) else v) for k, v in t.items()}
+            for t in targets
+        ]
         with torch.cuda.amp.autocast(enabled=args.amp):
-            outputs = model(samples, captions=captions)
+            outputs = model(samples, captions=captions, sentence_mode=sentence_mode)
             loss_dict = criterion(outputs, targets, cap_list, captions)
 
             weight_dict = criterion.weight_dict
@@ -123,13 +127,6 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
 
     iou_types = tuple(k for k in ('segm', 'bbox') if k in postprocessors.keys())
     useCats = True
-    try:
-        useCats = args.useCats
-    except:
-        useCats = True
-    if not useCats:
-        print("useCats: {} !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!".format(useCats))
-
     coco_evaluator = CocoGroundingEvaluator(base_ds, iou_types, useCats=useCats)
 
 
@@ -148,7 +145,6 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
         from pycocotools.coco import COCO
         coco = COCO(args.coco_val_path)
 
-        # 获取所有类别
         category_dict = coco.loadCats(coco.getCatIds())
         cat_list = [item['name'] for item in category_dict]
     else:
@@ -192,8 +188,6 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
 
         if args.save_results:
 
-
-
             for i, (tgt, res) in enumerate(zip(targets, results)):
                 """
                 pred vars:
@@ -223,12 +217,6 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
                 if 'res_info' not in output_state_dict:
                     output_state_dict['res_info'] = []
                 output_state_dict['res_info'].append(res_info.cpu())
-
-            # # for debug only
-            # import random
-            # if random.random() > 0.7:
-            #     print("Now let's break")
-            #     break
 
         _cnt += 1
         if args.debug:
@@ -275,5 +263,3 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
 
 
     return stats, coco_evaluator
-
-

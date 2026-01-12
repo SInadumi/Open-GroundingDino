@@ -16,7 +16,6 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--sg_path", type=Path, required=True, help="Path to GQA sceneGraphs dir")
     p.add_argument("--vg_img_data_path", type=Path, required=True, help="Path to VG image_data.json directory")
     p.add_argument("--out_dir", type=Path, required=True,  help="Output directory path")
-    p.add_argument("--split", type=str, default="train", choices=["train", "val"])
     p.add_argument("--img_ext", type=str, default=".jpg",
                    help="Extension for filename if VG meta doesn't provide a basename (default: .jpg)")
 
@@ -107,22 +106,20 @@ def spankey_to_char_span(text_tok_id: SpanKey, question: str) -> Optional[Tuple[
 
     return None
 
-# NOTE: python tools/gqa2odvg.py --data_path ~/datasets/gqa --sg_path ~/datasets/gqa --vg_img_data_path ~/datasets/vg --split val --out_dir ./DATASET/gqa
-def main() -> None:
-    args = parse_args()
+def convert_odvg(args, split: str):
+
     data_path = Path(args.data_path)
     sg_path = Path(args.sg_path)
     vg_path = Path(args.vg_img_data_path)
-
 
     imgid2meta = {}
     with open(vg_path / "image_data.json", "r") as f:
         imgid2meta = json.load(f)
     imgid2meta = {int(x["image_id"]): x for x in imgid2meta}
 
-    with open(data_path / f"{args.split}_balanced_questions.json", "r") as f:
+    with open(data_path / f"{split}_balanced_questions.json", "r") as f:
         q_data: Dict[str, Any] = json.load(f)
-    with open(sg_path / f"{args.split}_sceneGraphs.json", "r") as f:
+    with open(sg_path / f"{split}_sceneGraphs.json", "r") as f:
         sg_data: Dict[str, Any] = json.load(f)
 
     # group by imageId
@@ -131,9 +128,7 @@ def main() -> None:
         img_id = int(q["imageId"])
         img2ann[img_id][qid] = q
 
-    # ---- (Optional) semantic-select based補完 (KEEP) ----
     # This fills missing question span->object_id links if semantic indicates select(name+id).
-    # if args.keep_semantic_fill:
     regexp_num = re.compile(r"([0-9]+)")
     regexp_alpha = re.compile(r"([A-Za-z]+)")
     for img_id, qdict in img2ann.items():
@@ -171,8 +166,7 @@ def main() -> None:
                 end = beg + len(name)
                 ann["annotations"]["question"][(beg, end)] = box_id  # type: ignore
 
-    args.out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = args.out_dir / f"gqa_{args.split}_odvg.jsonl"
+    out_path = args.out_dir / f"gqa_{split}_odvg.jsonl"
 
     num_written = 0
     num_skipped_no_regions = 0
@@ -236,13 +230,14 @@ def main() -> None:
                         continue
 
                     beg, end = cleaned[0]
-                    phrase = question[beg:end].strip()
-                    phrase = phrase.rstrip("?.!,;:")
+                    phrase_raw = question[beg:end]
+                    phrase = phrase_raw.strip().rstrip("?.!,;:")
                     if not phrase:
                         continue
 
                     regions.append({
                         "phrase": phrase,
+                        "span": [beg, end],
                         "bbox": [x1, y1, x2, y2],
                     })
                     phrases_for_caption.append(phrase)
@@ -269,6 +264,11 @@ def main() -> None:
     print(f"[OK] wrote: {num_written} lines -> {out_path}")
     print(f"[INFO] skipped (no valid regions): {num_skipped_no_regions}")
 
+def main() -> None:
+    args = parse_args()
+    args.out_dir.mkdir(parents=True, exist_ok=True)
+    convert_odvg(args, "val")
+    convert_odvg(args, "train")
 
 if __name__ == "__main__":
     main()

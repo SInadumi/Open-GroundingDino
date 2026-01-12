@@ -192,6 +192,7 @@ def gen_record(sentence, annotation):
                     regions.append(
                         {
                             "phrase": phrase.text,
+                            "span": [phrase.span[0], phrase.span[1]],
                             "bbox": [box.xmin, box.ymin, box.xmax, box.ymax],
                         }
                     )
@@ -210,42 +211,44 @@ def gen_record(sentence, annotation):
         }
     }
 
+def convert_odvg(split: str, ids, sentence_map, annotation_map, output_dir: Path):
+    odvg_anno = []
+    for _id in tqdm(ids):
+        annotation_path = annotation_map[_id]
+        sentences_path = sentence_map[_id]
+        annotation = Annotation.from_xml(ET.parse(annotation_path).getroot())
+        sentences = sentences_path.read_text().splitlines()
 
-# NOTE: python tools/flickr30keja2odvg.py --f30k_ja_root ~/datasets/Flickr30kEnt-JP --f30k_en_root ~/datasets/flickr30k_entities --output_dir ./DATASET/f30k_ent_jp
+        image_id = annotation_path.stem
+        document = Document.from_string(image_id, sentences)
+
+        for sentence in document.sentences:
+            x = gen_record(sentence, annotation)
+            if x:
+                odvg_anno.append(x)
+
+    output_file = output_dir / f"flickr30k_entities_ja_{split}_odvg.jsonl"
+    with jsonlines.open(output_file, mode="w") as fwriter:
+        fwriter.write_all(odvg_anno)
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="flickr30k entities to ODVG List.")
+    parser = argparse.ArgumentParser(description="flickr30k entities to ODVG format.")
     parser.add_argument("--f30k_en_root", type=Path, default="", help="Source anno root for English annotations")
     parser.add_argument("--f30k_ja_root", type=Path, default="", help="Source anno root for Japanese annotations")
     parser.add_argument("--output_dir", type=Path, default="", help="Output directory for JSONL files")
     args = parser.parse_args()
     print(args)
 
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+
     sentence_list = (args.f30k_ja_root / "Sentences_jp_v2").glob("*.txt")
-    sentence_map = {
-        p.stem: p for p in sentence_list
-    }
+    sentence_map = {p.stem: p for p in sentence_list}
     annotation_list = (args.f30k_en_root / "Annotations").glob("*.xml")
-    annotation_map = {
-        p.stem: p for p in annotation_list
-    }
+    annotation_map = {p.stem: p for p in annotation_list}
 
-    for split in ["train", "val", "test"]:
-        ids = (args.f30k_en_root / f"{split}.txt").read_text().splitlines()
-        odvg_anno = []
-        for _id in tqdm(ids):
-            annotation_path = annotation_map[_id]
-            sentences_path = sentence_map[_id]
-            annotation = Annotation.from_xml(ET.parse(annotation_path).getroot())
-            sentences = sentences_path.read_text().splitlines()
-
-            image_id = annotation_path.stem
-            document = Document.from_string(image_id, sentences)
-
-            for sentence in document.sentences:
-                x = gen_record(sentence, annotation)
-                if x:
-                    odvg_anno.append(x)
-
-        output_file = args.output_dir / f"flickr30k_entities_ja_odvg_{split}.jsonl"
-        with jsonlines.open(output_file, mode="w") as fwriter:
-            fwriter.write_all(odvg_anno)
+    ids_val = (args.f30k_en_root / "val.txt").read_text().splitlines()
+    convert_odvg("val", ids_val, sentence_map, annotation_map, args.output_dir)
+    ids_test = (args.f30k_en_root / "test.txt").read_text().splitlines()
+    convert_odvg("test", ids_test, sentence_map, annotation_map, args.output_dir)
+    ids_train = (args.f30k_en_root / f"train.txt").read_text().splitlines()
+    convert_odvg("train", ids_train, sentence_map, annotation_map, args.output_dir)

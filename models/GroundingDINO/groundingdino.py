@@ -23,6 +23,7 @@ from torch import nn
 from torchvision.ops.boxes import nms
 
 from groundingdino.util import box_ops, get_tokenlizer
+from groundingdino.util.vl_utils import create_positive_map_from_span
 from groundingdino.util.misc import (
     NestedTensor,
     get_world_size,
@@ -36,6 +37,7 @@ from .backbone import build_backbone
 from .bertwarper import (
     BertModelWarper,
     TextEncoderShell,
+    generate_masks_for_sentence,
     generate_masks_with_special_tokens_and_transfer_map,
 )
 from .matcher import build_matcher
@@ -237,13 +239,23 @@ class GroundingDINO(nn.Module):
         )
         one_hot_token = tokenized
 
-        (
-            text_self_attention_masks,
-            position_ids,
-            cate_to_token_mask_list,
-        ) = generate_masks_with_special_tokens_and_transfer_map(
-            tokenized, self.specical_tokens, self.tokenizer
-        )
+        sentence_mode = kw.get("sentence_mode", False)
+        if targets is not None and any("token_span" in t for t in targets):
+            sentence_mode = True
+        if sentence_mode:
+            (
+                text_self_attention_masks,
+                position_ids,
+                cate_to_token_mask_list,
+            ) = generate_masks_for_sentence(tokenized, self.specical_tokens)
+        else:
+            (
+                text_self_attention_masks,
+                position_ids,
+                cate_to_token_mask_list,
+            ) = generate_masks_with_special_tokens_and_transfer_map(
+                tokenized, self.specical_tokens, self.tokenizer
+            )
 
         if text_self_attention_masks.shape[1] > self.max_text_len:
             text_self_attention_masks = text_self_attention_masks[
@@ -529,20 +541,33 @@ class SetCriterion(nn.Module):
              return_indices: used for vis. if True, the layer0-5 indices will be returned as well.
         """
         device=next(iter(outputs.values())).device
-        one_hot = torch.zeros(outputs['pred_logits'].size(),dtype=torch.int64) # torch.Size([bs, 900, 256])
+        one_hot = torch.zeros(outputs['pred_logits'].size(),dtype=torch.float32) # torch.Size([bs, 900, 256])
         token = outputs['token']
 
         label_map_list = []
         indices = []
-        for j in range(len(cat_list)): # bs
-            label_map=[]
-            for i in range(len(cat_list[j])):
-                label_id=torch.tensor([i])
-                per_label=create_positive_map(token[j], label_id, cat_list[j], caption[j])
-                label_map.append(per_label)
-            label_map=torch.stack(label_map,dim=0).squeeze(1)
-            label_map_list.append(label_map)
-        for j in range(len(cat_list)): # bs
+        has_span = ["token_span" in t for t in targets]
+        if any(has_span) and not all(has_span):
+            raise AssertionError("token_span must be present for all targets or none.")
+        use_span = all(has_span)
+        for j in range(len(targets)): # bs
+            if use_span:
+                token_span = targets[j]["token_span"]
+                label_map = create_positive_map_from_span(
+                    token[j],
+                    token_span,
+                    max_text_len=outputs["pred_logits"].size(-1),
+                )
+                label_map_list.append(label_map)
+            else:
+                label_map = []
+                for i in range(len(cat_list[j])):
+                    label_id = torch.tensor([i])
+                    per_label = create_positive_map(token[j], label_id, cat_list[j], caption[j])
+                    label_map.append(per_label)
+                label_map = torch.stack(label_map, dim=0).squeeze(1)
+                label_map_list.append(label_map)
+        for j in range(len(targets)): # bs
             for_match = {
                 "pred_logits" : outputs['pred_logits'][j].unsqueeze(0),
                 "pred_boxes" : outputs['pred_boxes'][j].unsqueeze(0)
@@ -553,12 +578,11 @@ class SetCriterion(nn.Module):
         # - index_i is the indices of the selected predictions (in order)
         # - index_j is the indices of the corresponding selected targets (in order)
 
-        # import pdb; pdb.set_trace()
         tgt_ids = [v["labels"].cpu() for v in targets]
         # len(tgt_ids) == bs
         for i in range(len(indices)):
             tgt_ids[i]=tgt_ids[i][indices[i][1]]
-            one_hot[i,indices[i][0]] = label_map_list[i][tgt_ids[i]].to(torch.long)
+            one_hot[i,indices[i][0]] = label_map_list[i][tgt_ids[i]]
         outputs['one_hot'] = one_hot
         if return_indices:
             indices0_copy = indices
@@ -588,11 +612,11 @@ class SetCriterion(nn.Module):
                     }
                     inds = self.matcher(aux_output_single, [targets[j]], label_map_list[j])
                     indices.extend(inds)
-                one_hot_aux = torch.zeros(outputs['pred_logits'].size(),dtype=torch.int64)
+                one_hot_aux = torch.zeros(outputs['pred_logits'].size(),dtype=torch.float32)
                 tgt_ids = [v["labels"].cpu() for v in targets]
                 for i in range(len(indices)):
                     tgt_ids[i]=tgt_ids[i][indices[i][1]]
-                    one_hot_aux[i,indices[i][0]] = label_map_list[i][tgt_ids[i]].to(torch.long)
+                    one_hot_aux[i,indices[i][0]] = label_map_list[i][tgt_ids[i]]
                 aux_outputs['one_hot'] = one_hot_aux
                 aux_outputs['text_mask'] = outputs['text_mask']
                 if return_indices:
@@ -614,11 +638,11 @@ class SetCriterion(nn.Module):
                 }
                 inds = self.matcher(interm_output_single, [targets[j]], label_map_list[j])
                 indices.extend(inds)
-            one_hot_aux = torch.zeros(outputs['pred_logits'].size(),dtype=torch.int64)
+            one_hot_aux = torch.zeros(outputs['pred_logits'].size(),dtype=torch.float32)
             tgt_ids = [v["labels"].cpu() for v in targets]
             for i in range(len(indices)):
                 tgt_ids[i]=tgt_ids[i][indices[i][1]]
-                one_hot_aux[i,indices[i][0]] = label_map_list[i][tgt_ids[i]].to(torch.long)
+                one_hot_aux[i,indices[i][0]] = label_map_list[i][tgt_ids[i]]
             interm_outputs['one_hot'] = one_hot_aux
             interm_outputs['text_mask'] = outputs['text_mask']
             if return_indices:
@@ -802,7 +826,7 @@ def build_groundingdino(args):
 
     return model, criterion, postprocessors
 
-def create_positive_map(tokenized, tokens_positive,cat_list,caption):
+def create_positive_map(tokenized, tokens_positive, cat_list, caption):
     """Construct a map such that positive_map[i,j] = True iff box i is associated to token j"""
     positive_map = torch.zeros((len(tokens_positive), 256), dtype=torch.float)
 
